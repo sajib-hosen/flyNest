@@ -1,0 +1,937 @@
+# 📦 Project Structure
+
+```
+flynest-mini-school-api/
+├─ .env.example
+├─ package.json
+├─ tsconfig.json
+├─ tsconfig.build.json
+├─ nest-cli.json
+├─ drizzle.config.ts
+├─ docker-compose.yml
+├─ README.md
+├─ src/
+│  ├─ main.ts
+│  ├─ app.module.ts
+│  ├─ common/
+│  │  ├─ decorators/roles.decorator.ts
+│  │  ├─ guards/jwt-auth.guard.ts
+│  │  ├─ guards/roles.guard.ts
+│  │  └─ interceptors/transform.interceptor.ts
+│  ├─ db/
+│  │  ├─ schema.ts
+│  │  ├─ drizzle.module.ts
+│  │  └─ drizzle.service.ts
+│  ├─ auth/
+│  │  ├─ auth.module.ts
+│  │  ├─ auth.controller.ts
+│  │  ├─ auth.service.ts
+│  │  ├─ dto/login.dto.ts
+│  │  ├─ dto/signup.dto.ts
+│  │  ├─ jwt.strategy.ts
+│  │  └─ types.ts
+│  ├─ users/
+│  │  ├─ users.module.ts
+│  │  ├─ users.service.ts
+│  │  └─ users.repository.ts
+│  ├─ students/
+│  │  ├─ students.module.ts
+│  │  ├─ students.controller.ts
+│  │  ├─ students.service.ts
+│  │  ├─ dto/create-student.dto.ts
+│  │  └─ dto/paginate-students.dto.ts
+│  └─ classes/
+│     ├─ classes.module.ts
+│     ├─ classes.controller.ts
+│     ├─ classes.service.ts
+│     └─ dto/create-class.dto.ts
+└─ scripts/
+   └─ seed.ts
+```
+
+---
+
+# 🔧 Config & Bootstrap
+
+## `.env.example`
+```env
+# Server
+PORT=3000
+NODE_ENV=development
+
+# JWT
+JWT_ACCESS_SECRET=supersecret_access
+JWT_REFRESH_SECRET=supersecret_refresh
+JWT_ACCESS_EXPIRES=15m
+JWT_REFRESH_EXPIRES=7d
+
+# Database
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/flynest
+```
+
+## `package.json`
+```json
+{
+  "name": "flynest-mini-school-api",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "build": "nest build",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "lint": "eslint \"src/**/*.ts\" --fix",
+    "db:generate": "drizzle-kit generate --schema=./src/db/schema.ts",
+    "db:migrate": "drizzle-kit migrate --schema=./src/db/schema.ts",
+    "db:studio": "drizzle-kit studio",
+    "seed": "ts-node -r tsconfig-paths/register -r dotenv/config scripts/seed.ts"
+  },
+  "dependencies": {
+    "@nestjs/common": "^10.0.0",
+    "@nestjs/core": "^10.0.0",
+    "@nestjs/jwt": "^10.2.0",
+    "@nestjs/passport": "^10.0.2",
+    "@nestjs/platform-express": "^10.0.0",
+    "@nestjs/swagger": "^7.3.1",
+    "bcrypt": "^5.1.1",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.0",
+    "drizzle-orm": "^0.31.0",
+    "dotenv": "^16.4.5",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1",
+    "pg": "^8.11.5",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^10.4.5",
+    "@nestjs/schematics": "^10.1.2",
+    "@nestjs/testing": "^10.0.0",
+    "@types/bcrypt": "^5.0.0",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.11.30",
+    "drizzle-kit": "^0.24.0",
+    "eslint": "^8.57.0",
+    "prettier": "^3.3.3",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.4.5"
+  }
+}
+```
+
+## `tsconfig.json`
+```json
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "declaration": false,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2021",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "paths": {
+      "*": ["src/*"]
+    }
+  },
+  "include": ["src", "scripts"],
+  "exclude": ["node_modules", "dist"]
+}
+```
+
+## `tsconfig.build.json`
+```json
+{
+  "extends": "./tsconfig.json",
+  "exclude": ["node_modules", "test", "dist", "**/*.spec.ts", "scripts"]
+}
+```
+
+## `nest-cli.json`
+```json
+{
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "src"
+}
+```
+
+## `drizzle.config.ts`
+```ts
+import type { Config } from "drizzle-kit";
+import * as dotenv from "dotenv";
+dotenv.config();
+
+export default {
+  schema: "./src/db/schema.ts",
+  out: "./drizzle",
+  dialect: "postgresql",
+  dbCredentials: {
+    url: process.env.DATABASE_URL!,
+  },
+} satisfies Config;
+```
+
+## `docker-compose.yml`
+```yml
+version: '3.9'
+services:
+  postgres:
+    image: postgres:16
+    container_name: flynest_db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: flynest
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+volumes:
+  dbdata:
+```
+
+## `README.md`
+```md
+# FlyNest Mini School API
+
+## Quick Start
+1. Copy .env:
+   ```bash
+   cp .env.example .env
+   ```
+2. Start Postgres (Docker):
+   ```bash
+   docker compose up -d
+   ```
+3. Install deps & run migrations:
+   ```bash
+   pnpm i
+   pnpm db:generate && pnpm db:migrate
+   ```
+4. Seed data (admin/teacher/student users & classes):
+   ```bash
+   pnpm seed
+   ```
+5. Run the API:
+   ```bash
+   pnpm start:dev
+   ```
+6. Swagger Docs: open http://localhost:3000/api
+
+Default admin (from seed): `admin@school.com` / `password123`
+```
+
+---
+
+# 🗄️ Database (Drizzle)
+
+## `src/db/schema.ts`
+```ts
+import { pgTable, serial, text, integer, pgEnum, timestamp } from "drizzle-orm/pg-core";
+
+export const roleEnum = pgEnum('role', ['admin', 'teacher', 'student']);
+
+export const users = pgTable('users', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  email: text('email').notNull().unique(),
+  passwordHash: text('password_hash').notNull(),
+  role: roleEnum('role').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: false }).defaultNow().notNull(),
+});
+
+export const classes = pgTable('classes', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  section: text('section').notNull(),
+});
+
+export const students = pgTable('students', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  age: integer('age').notNull(),
+  classId: integer('class_id').references(() => classes.id),
+});
+```
+
+## `src/db/drizzle.service.ts`
+```ts
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Client } from 'pg';
+import { drizzle, NodePgDatabase } from 'drizzle-orm/node-postgres';
+
+@Injectable()
+export class DrizzleService implements OnModuleInit, OnModuleDestroy {
+  private client = new Client({ connectionString: process.env.DATABASE_URL });
+  db!: NodePgDatabase;
+
+  async onModuleInit() {
+    await this.client.connect();
+    this.db = drizzle(this.client);
+  }
+
+  async onModuleDestroy() {
+    await this.client.end();
+  }
+}
+```
+
+## `src/db/drizzle.module.ts`
+```ts
+import { Global, Module } from '@nestjs/common';
+import { DrizzleService } from './drizzle.service';
+
+@Global()
+@Module({
+  providers: [DrizzleService],
+  exports: [DrizzleService],
+})
+export class DrizzleModule {}
+```
+
+---
+
+# 🚀 App Bootstrap
+
+## `src/main.ts`
+```ts
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+import { ValidationPipe } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  app.useGlobalInterceptors(new TransformInterceptor());
+
+  const config = new DocumentBuilder()
+    .setTitle('FlyNest School API')
+    .setDescription('Mini School Management API')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+  const doc = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, doc);
+
+  await app.listen(process.env.PORT || 3000);
+}
+bootstrap();
+```
+
+## `src/app.module.ts`
+```ts
+import { Module } from '@nestjs/common';
+import { DrizzleModule } from './db/drizzle.module';
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
+import { StudentsModule } from './students/students.module';
+import { ClassesModule } from './classes/classes.module';
+
+@Module({
+  imports: [DrizzleModule, AuthModule, UsersModule, StudentsModule, ClassesModule],
+})
+export class AppModule {}
+```
+
+---
+
+# 🧰 Common Utilities
+
+## `src/common/decorators/roles.decorator.ts`
+```ts
+import { SetMetadata } from '@nestjs/common';
+export type Role = 'admin' | 'teacher' | 'student';
+export const ROLES_KEY = 'roles';
+export const Roles = (...roles: Role[]) => SetMetadata(ROLES_KEY, roles);
+```
+
+## `src/common/guards/jwt-auth.guard.ts`
+```ts
+import { Injectable } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+
+@Injectable()
+export class JwtAuthGuard extends AuthGuard('jwt') {}
+```
+
+## `src/common/guards/roles.guard.ts`
+```ts
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { ROLES_KEY, Role } from '../decorators/roles.decorator';
+
+@Injectable()
+export class RolesGuard implements CanActivate {
+  constructor(private reflector: Reflector) {}
+
+  canActivate(ctx: ExecutionContext): boolean {
+    const required = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [
+      ctx.getHandler(),
+      ctx.getClass(),
+    ]);
+    if (!required || required.length === 0) return true;
+    const { user } = ctx.switchToHttp().getRequest();
+    return required.includes(user?.role);
+  }
+}
+```
+
+## `src/common/interceptors/transform.interceptor.ts`
+```ts
+import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
+import { map, Observable } from 'rxjs';
+
+@Injectable()
+export class TransformInterceptor implements NestInterceptor {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+    return next.handle().pipe(
+      map((data) => ({ success: true, data }))
+    );
+  }
+}
+```
+
+---
+
+# 🔐 Auth & Users
+
+## `src/auth/types.ts`
+```ts
+export type JwtPayload = { sub: number; email: string; role: 'admin' | 'teacher' | 'student' };
+```
+
+## `src/auth/dto/signup.dto.ts`
+```ts
+import { ApiProperty } from '@nestjs/swagger';
+import { IsEmail, IsEnum, IsNotEmpty, MinLength } from 'class-validator';
+
+export class SignupDto {
+  @ApiProperty()
+  @IsNotEmpty()
+  name: string;
+
+  @ApiProperty()
+  @IsEmail()
+  email: string;
+
+  @ApiProperty()
+  @MinLength(6)
+  password: string;
+
+  @ApiProperty({ enum: ['admin', 'teacher', 'student'] })
+  @IsEnum(['admin', 'teacher', 'student'] as any)
+  role: 'admin' | 'teacher' | 'student';
+}
+```
+
+## `src/auth/dto/login.dto.ts`
+```ts
+import { ApiProperty } from '@nestjs/swagger';
+import { IsEmail, MinLength } from 'class-validator';
+
+export class LoginDto {
+  @ApiProperty()
+  @IsEmail()
+  email: string;
+
+  @ApiProperty()
+  @MinLength(6)
+  password: string;
+}
+```
+
+## `src/auth/jwt.strategy.ts`
+```ts
+import { Injectable } from '@nestjs/common';
+import { PassportStrategy } from '@nestjs/passport';
+import { ExtractJwt, Strategy } from 'passport-jwt';
+import { JwtPayload } from './types';
+
+@Injectable()
+export class JwtStrategy extends PassportStrategy(Strategy) {
+  constructor() {
+    super({
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ignoreExpiration: false,
+      secretOrKey: process.env.JWT_ACCESS_SECRET,
+    });
+  }
+
+  async validate(payload: JwtPayload) {
+    return { userId: payload.sub, email: payload.email, role: payload.role };
+  }
+}
+```
+
+## `src/users/users.repository.ts`
+```ts
+import { Injectable } from '@nestjs/common';
+import { DrizzleService } from 'src/db/drizzle.service';
+import { users } from 'src/db/schema';
+import { eq } from 'drizzle-orm';
+
+@Injectable()
+export class UsersRepository {
+  constructor(private readonly db: DrizzleService) {}
+
+  async findByEmail(email: string) {
+    const rows = await this.db.db.select().from(users).where(eq(users.email, email));
+    return rows[0] ?? null;
+  }
+
+  async create(user: { name: string; email: string; passwordHash: string; role: 'admin'|'teacher'|'student' }) {
+    const [row] = await this.db.db.insert(users).values(user).returning();
+    return row;
+  }
+
+  async findById(id: number) {
+    const rows = await this.db.db.select().from(users).where(eq(users.id, id));
+    return rows[0] ?? null;
+  }
+}
+```
+
+## `src/users/users.service.ts`
+```ts
+import { Injectable, ConflictException } from '@nestjs/common';
+import { UsersRepository } from './users.repository';
+
+@Injectable()
+export class UsersService {
+  constructor(private readonly repo: UsersRepository) {}
+
+  async getByEmail(email: string) {
+    return this.repo.findByEmail(email);
+  }
+
+  async create(data: { name: string; email: string; passwordHash: string; role: 'admin'|'teacher'|'student' }) {
+    const exists = await this.repo.findByEmail(data.email);
+    if (exists) throw new ConflictException('Email already in use');
+    return this.repo.create(data);
+  }
+}
+```
+
+## `src/users/users.module.ts`
+```ts
+import { Module } from '@nestjs/common';
+import { UsersService } from './users.service';
+import { UsersRepository } from './users.repository';
+
+@Module({
+  providers: [UsersService, UsersRepository],
+  exports: [UsersService],
+})
+export class UsersModule {}
+```
+
+## `src/auth/auth.service.ts`
+```ts
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { UsersService } from 'src/users/users.service';
+import * as bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
+
+@Injectable()
+export class AuthService {
+  constructor(private users: UsersService, private jwt: JwtService) {}
+
+  async signup(input: { name: string; email: string; password: string; role: 'admin'|'teacher'|'student' }) {
+    const passwordHash = await bcrypt.hash(input.password, 10);
+    const user = await this.users.create({
+      name: input.name,
+      email: input.email,
+      passwordHash,
+      role: input.role,
+    });
+    return this.tokens(user.id, user.email, user.role);
+  }
+
+  async login(email: string, password: string) {
+    const user = await this.users.getByEmail(email);
+    if (!user) throw new UnauthorizedException('Invalid credentials');
+    const ok = await bcrypt.compare(password, user.passwordHash);
+    if (!ok) throw new UnauthorizedException('Invalid credentials');
+    return this.tokens(user.id, user.email, user.role);
+  }
+
+  private tokens(sub: number, email: string, role: 'admin'|'teacher'|'student') {
+    const access = this.jwt.sign({ sub, email, role }, { secret: process.env.JWT_ACCESS_SECRET, expiresIn: process.env.JWT_ACCESS_EXPIRES || '15m' });
+    const refresh = this.jwt.sign({ sub, email, role }, { secret: process.env.JWT_REFRESH_SECRET, expiresIn: process.env.JWT_REFRESH_EXPIRES || '7d' });
+    return { accessToken: access, refreshToken: refresh };
+  }
+}
+```
+
+## `src/auth/auth.controller.ts`
+```ts
+import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import { AuthService } from './auth.service';
+import { SignupDto } from './dto/signup.dto';
+import { LoginDto } from './dto/login.dto';
+import { ApiTags } from '@nestjs/swagger';
+
+@ApiTags('auth')
+@Controller('auth')
+export class AuthController {
+  constructor(private auth: AuthService) {}
+
+  @Post('signup')
+  async signup(@Body() dto: SignupDto) {
+    return this.auth.signup(dto);
+  }
+
+  @HttpCode(200)
+  @Post('login')
+  async login(@Body() dto: LoginDto) {
+    return this.auth.login(dto.email, dto.password);
+  }
+}
+```
+
+## `src/auth/auth.module.ts`
+```ts
+import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
+import { AuthService } from './auth.service';
+import { AuthController } from './auth.controller';
+import { UsersModule } from 'src/users/users.module';
+import { JwtStrategy } from './jwt.strategy';
+
+@Module({
+  imports: [UsersModule, JwtModule.register({})],
+  providers: [AuthService, JwtStrategy],
+  controllers: [AuthController],
+})
+export class AuthModule {}
+```
+
+---
+
+# 🎓 Students Module
+
+## `src/students/dto/create-student.dto.ts`
+```ts
+import { ApiProperty } from '@nestjs/swagger';
+import { IsInt, IsNotEmpty, IsOptional, Min } from 'class-validator';
+
+export class CreateStudentDto {
+  @ApiProperty()
+  @IsNotEmpty()
+  name: string;
+
+  @ApiProperty()
+  @IsInt()
+  @Min(3)
+  age: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsInt()
+  classId?: number;
+}
+```
+
+## `src/students/dto/paginate-students.dto.ts`
+```ts
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import { IsInt, IsOptional, Max, Min } from 'class-validator';
+
+export class PaginateStudentsDto {
+  @ApiPropertyOptional({ default: 1 })
+  @Type(() => Number)
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  page = 1;
+
+  @ApiPropertyOptional({ default: 10 })
+  @Type(() => Number)
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  limit = 10;
+}
+```
+
+## `src/students/students.service.ts`
+```ts
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { DrizzleService } from 'src/db/drizzle.service';
+import { students } from 'src/db/schema';
+import { and, eq, sql } from 'drizzle-orm';
+
+@Injectable()
+export class StudentsService {
+  constructor(private readonly db: DrizzleService) {}
+
+  async create(input: { name: string; age: number; classId?: number }) {
+    const [row] = await this.db.db.insert(students).values(input).returning();
+    return row;
+  }
+
+  async findAll(page: number, limit: number) {
+    const offset = (page - 1) * limit;
+    const data = await this.db.db.select().from(students).limit(limit).offset(offset);
+    const [{ count }] = await this.db.db.execute<{ count: string }>(sql`SELECT COUNT(*)::int as count FROM students`);
+    return { items: data, total: Number(count), page, limit };
+  }
+
+  async findOne(id: number) {
+    const rows = await this.db.db.select().from(students).where(eq(students.id, id));
+    const row = rows[0];
+    if (!row) throw new NotFoundException('Student not found');
+    return row;
+  }
+
+  async setClass(id: number, classId: number | null) {
+    const [row] = await this.db.db.update(students).set({ classId }).where(eq(students.id, id)).returning();
+    if (!row) throw new NotFoundException('Student not found');
+    return row;
+  }
+
+  async listByClass(classId: number) {
+    return this.db.db.select().from(students).where(eq(students.classId, classId));
+  }
+}
+```
+
+## `src/students/students.controller.ts`
+```ts
+import { Body, Controller, Get, Param, ParseIntPipe, Post, Query, UseGuards } from '@nestjs/common';
+import { StudentsService } from './students.service';
+import { CreateStudentDto } from './dto/create-student.dto';
+import { PaginateStudentsDto } from './dto/paginate-students.dto';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { RolesGuard } from 'src/common/guards/roles.guard';
+
+@ApiTags('students')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Controller('students')
+export class StudentsController {
+  constructor(private readonly students: StudentsService) {}
+
+  @Post()
+  @Roles('admin')
+  create(@Body() dto: CreateStudentDto) {
+    return this.students.create(dto);
+  }
+
+  @Get()
+  @Roles('admin', 'teacher')
+  findAll(@Query() { page, limit }: PaginateStudentsDto) {
+    return this.students.findAll(page, limit);
+  }
+
+  @Get(':id')
+  @Roles('admin', 'teacher', 'student')
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.students.findOne(id);
+  }
+}
+```
+
+---
+
+# 🏫 Classes Module
+
+## `src/classes/dto/create-class.dto.ts`
+```ts
+import { ApiProperty } from '@nestjs/swagger';
+import { IsNotEmpty } from 'class-validator';
+
+export class CreateClassDto {
+  @ApiProperty()
+  @IsNotEmpty()
+  name: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  section: string;
+}
+```
+
+## `src/classes/classes.service.ts`
+```ts
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { DrizzleService } from 'src/db/drizzle.service';
+import { classes, students } from 'src/db/schema';
+import { eq } from 'drizzle-orm';
+
+@Injectable()
+export class ClassesService {
+  constructor(private readonly db: DrizzleService) {}
+
+  async create(input: { name: string; section: string }) {
+    const [row] = await this.db.db.insert(classes).values(input).returning();
+    return row;
+  }
+
+  async enroll(classId: number, studentId: number) {
+    // ensure class exists
+    const [klass] = await this.db.db.select().from(classes).where(eq(classes.id, classId));
+    if (!klass) throw new NotFoundException('Class not found');
+    // ensure student exists
+    const [stud] = await this.db.db.select().from(students).where(eq(students.id, studentId));
+    if (!stud) throw new NotFoundException('Student not found');
+
+    const [row] = await this.db.db
+      .update(students)
+      .set({ classId })
+      .where(eq(students.id, studentId))
+      .returning();
+    return row;
+  }
+
+  async listStudents(classId: number) {
+    // Verify class exists (optional)
+    const result = await this.db.db.select().from(students).where(eq(students.classId, classId));
+    return result;
+  }
+}
+```
+
+## `src/classes/classes.controller.ts`
+```ts
+import { Body, Controller, Get, Param, ParseIntPipe, Post, UseGuards } from '@nestjs/common';
+import { ClassesService } from './classes.service';
+import { CreateClassDto } from './dto/create-class.dto';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { RolesGuard } from 'src/common/guards/roles.guard';
+
+@ApiTags('classes')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Controller('classes')
+export class ClassesController {
+  constructor(private readonly classes: ClassesService) {}
+
+  @Post()
+  @Roles('admin')
+  create(@Body() dto: CreateClassDto) {
+    return this.classes.create(dto);
+  }
+
+  @Post(':id/enroll')
+  @Roles('admin', 'teacher')
+  enroll(
+    @Param('id', ParseIntPipe) classId: number,
+    @Body('studentId', ParseIntPipe) studentId: number,
+  ) {
+    return this.classes.enroll(classId, studentId);
+  }
+
+  @Get(':id/students')
+  @Roles('admin', 'teacher')
+  list(@Param('id', ParseIntPipe) id: number) {
+    return this.classes.listStudents(id);
+  }
+}
+```
+
+## `src/classes/classes.module.ts`
+```ts
+import { Module } from '@nestjs/common';
+import { ClassesController } from './classes.controller';
+import { ClassesService } from './classes.service';
+
+@Module({ controllers: [ClassesController], providers: [ClassesService] })
+export class ClassesModule {}
+```
+
+---
+
+# 🧑‍🏫 Users (module wiring)
+
+*(Users module already defined above and used by Auth)*
+
+---
+
+# 🌱 Seed Script
+
+## `scripts/seed.ts`
+```ts
+import 'dotenv/config';
+import { Client } from 'pg';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import * as bcrypt from 'bcrypt';
+import { users, classes, students } from '../src/db/schema';
+
+async function main() {
+  const client = new Client({ connectionString: process.env.DATABASE_URL });
+  await client.connect();
+  const db = drizzle(client);
+
+  const passwordHash = await bcrypt.hash('password123', 10);
+
+  // users
+  await db.insert(users).values([
+    { name: 'Admin', email: 'admin@school.com', passwordHash, role: 'admin' },
+    { name: 'Teacher Tina', email: 'teacher@school.com', passwordHash, role: 'teacher' },
+    { name: 'Student Sam', email: 'student@school.com', passwordHash, role: 'student' },
+  ]).onConflictDoNothing();
+
+  // classes
+  const [a] = await db.insert(classes).values({ name: 'Math', section: 'A' }).returning();
+  const [b] = await db.insert(classes).values({ name: 'Science', section: 'B' }).returning();
+
+  // students
+  await db.insert(students).values([
+    { name: 'Alice', age: 12, classId: a.id },
+    { name: 'Bob', age: 11, classId: b.id },
+    { name: 'Charlie', age: 13 },
+  ]);
+
+  await client.end();
+  console.log('Seed completed');
+}
+
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});
+```
+
+---
+
+# ✅ Feature Summary (as required)
+- **Auth**: signup/login, bcrypt hashing, JWT (access + refresh tokens returned), `JwtStrategy`.
+- **Roles**: `admin`, `teacher`, `student` via `@Roles()` + `RolesGuard`.
+- **Students**: `POST /students` (admin), `GET /students` (admin/teacher, with `page` & `limit`), `GET /students/:id`.
+- **Classes**: `POST /classes` (admin), `POST /classes/:id/enroll` (admin/teacher), `GET /classes/:id/students` (admin/teacher).
+- **Validation**: DTOs + `ValidationPipe`.
+- **Errors**: 400/401/403/404 via guards & Nest exceptions.
+- **Docs**: Swagger at `/api`.
+- **Bonus**: Docker DB, Seed script, Pagination.
+
+---
+
+# 🧪 Quick API Examples
+- **Login (Admin)**
+  - `POST /auth/login` → `{ "email": "admin@school.com", "password": "password123" }`
+- **Create Student** (use Bearer token, Admin)
+  - `POST /students` → `{ "name": "Denise", "age": 10, "classId": 1 }`
+- **List Students** (Admin/Teacher)
+  - `GET /students?page=1&limit=10`
+- **Create Class** (Admin)
+  - `POST /classes` → `{ "name": "History", "section": "A" }`
+- **Enroll Student** (Admin/Teacher)
+  - `POST /classes/1/enroll` → `{ "studentId": 3 }`
+- **Get Students of Class** (Admin/Teacher)
+  - `GET /classes/1/students`
