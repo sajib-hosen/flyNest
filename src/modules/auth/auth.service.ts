@@ -1,7 +1,5 @@
 import {
   Injectable,
-  // BadRequestException,
-  // UnauthorizedException,
   Inject,
   BadRequestException,
   UnauthorizedException,
@@ -81,7 +79,7 @@ export class AuthService {
         name: input.name,
         email: input.email,
         passwordHash: hashedPassword,
-        role: 'student', // default role
+        role: 'student',
       })
       .returning();
 
@@ -142,16 +140,12 @@ export class AuthService {
       .from(users)
       .where(eq(users.email, email));
 
-    console.log('user in db ', user);
-
     if (!user) return false;
 
     const hasRole = roles.some(
       (role) =>
         AdminRolePower[user.role as AdminRoleType] >= AdminRolePower[role],
     );
-
-    console.log('hasRole ', hasRole);
 
     return hasRole;
   }
