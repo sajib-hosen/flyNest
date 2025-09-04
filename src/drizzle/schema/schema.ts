@@ -52,6 +52,22 @@ export const students = pgTable(
   }),
 );
 
+export const attendanceSheet = pgTable('attendanceSheet', {
+  id: serial('id').primaryKey(),
+  date: text('date').notNull(),
+  teacher: integer('teacher').references(() => users.id),
+});
+
+export const attendanceStudents = pgTable('attendanceStudents', {
+  id: serial('id').primaryKey(),
+  attendanceId: integer('attendance_id')
+    .references(() => attendanceSheet.id)
+    .notNull(),
+  studentId: integer('student_id')
+    .references(() => students.id)
+    .notNull(),
+});
+
 // ---------------- RELATIONS ----------------
 export const usersRelations = relations(users, ({ one }) => ({
   student: one(students, {

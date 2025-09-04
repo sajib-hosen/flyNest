@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  UseGuards,
+  Query,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -6,6 +14,7 @@ import {
   ApiBody,
   ApiParam,
   ApiBearerAuth,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { ClassesService } from './classes.service';
 import { CreateClassInputDto } from './dto/create-class.dto';
@@ -71,5 +80,31 @@ export class ClassesController {
   @ApiResponse({ status: 404, description: 'Class not found' })
   async findAll(@Param('id') classId: string) {
     return await this.classesService.getStudentsOfClass(+classId);
+  }
+
+  @Post('/:id/attendance')
+  @Roles('admin', 'teacher')
+  @UseGuards(AuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Attend student by ID' })
+  @ApiParam({ name: 'id', description: 'Student ID', type: Number, example: 1 })
+  async attendStudent(@Param('id') studentId: string) {
+    return await this.classesService.attendStudent(+studentId);
+  }
+
+  @Get('attendance')
+  @Roles('admin', 'teacher')
+  @UseGuards(AuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get attendance sheed by date' })
+  @ApiQuery({
+    name: 'date',
+    required: true,
+    description: 'Date in YYYY-MM-DD format',
+    type: String,
+    example: '2025-09-04',
+  })
+  async getAttendanceSheet(@Query('date') date: string) {
+    return await this.classesService.getAttendanceByDate(date);
   }
 }
