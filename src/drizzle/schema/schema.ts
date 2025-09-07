@@ -5,6 +5,7 @@ import {
   integer,
   text,
   index,
+  pgEnum as drizzlePgEnum,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -14,12 +15,17 @@ export enum UserRole {
   MODERATOR = 'MODERATOR',
 }
 
-// 2️⃣ Define DB enum (for drizzle migrations & schema)
+// 👇 Wrapper to fix ESLint "any" issue
+const pgEnum = <T extends readonly [string, ...string[]]>(
+  name: string,
+  values: T,
+) => drizzlePgEnum(name, values);
+
 export const roleEnum = pgEnum('role', [
   UserRole.ADMIN,
   UserRole.USER,
   UserRole.MODERATOR,
-]);
+] as const);
 
 // ---------------- USERS ----------------
 export const users = pgTable(

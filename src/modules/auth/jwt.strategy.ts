@@ -45,7 +45,6 @@
 //       } else if (!token && req.cookies[COOKIE_NAME]) {
 //         token = ExtractJwt.fromExtractors([cookieExt])(req);
 //       }
-
 //       return token;
 //     };
 
@@ -119,6 +118,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       } else if (!token && req.query && req.query.token) {
         token = ExtractJwt.fromUrlQueryParameter('token')(req);
       }
+
       return token;
     };
 
@@ -129,10 +129,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: unknown) {
+  validate(payload: unknown) {
     if (isAuthInfo(payload)) {
       // await this.authService.get user role
+
       // get user role and push it in the object
+
       return {
         userId: payload.userId,
         email: payload.email,

@@ -149,4 +149,13 @@ export class AuthService {
 
     return hasRole;
   }
+
+  async getUserRole(userId: number) {
+    const [user] = await this.db
+      .select({ role: users.role })
+      .from(users)
+      .where(eq(users.id, userId));
+
+    return user.role;
+  }
 }

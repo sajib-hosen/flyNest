@@ -45,7 +45,7 @@ export class AdminGuard implements CanActivate {
       // if (!hasSufficientAdminRole) {
       //   return false;
       // }
-      return requiredRole.some((role) => request.user.roles as string[]);
+      return requiredRole.includes(request.user.role);
     }
 
     return true;
