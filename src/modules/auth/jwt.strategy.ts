@@ -93,15 +93,19 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { appConfig } from 'src/configuration';
 import { isAuthInfo } from './dto/auth.info';
 import { COOKIE_NAME } from 'src/utils/constants';
+import { AuthService } from './auth.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   private readonly logger = new Logger(JwtStrategy.name);
 
-  constructor(@Inject(appConfig.KEY) config: ConfigType<typeof appConfig>) {
+  constructor(
+    @Inject(appConfig.KEY) config: ConfigType<typeof appConfig>,
+    private readonly authService: AuthService,
+  ) {
     const cookieExt = (req: Request) => {
       if (req.cookies) {
-        return req.cookies[COOKIE_NAME];
+        return req.cookies[COOKIE_NAME] as string;
       }
       return null;
     };
@@ -125,11 +129,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  validate(payload: unknown) {
+  async validate(payload: unknown) {
     if (isAuthInfo(payload)) {
+      // await this.authService.get user role
+      // get user role and push it in the object
       return {
         userId: payload.userId,
         email: payload.email,
+        role: 'admin',
       };
     } else {
       throw new UnauthorizedException();

@@ -8,6 +8,19 @@ import {
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
+export enum UserRole {
+  ADMIN = 'ADMIN',
+  USER = 'USER',
+  MODERATOR = 'MODERATOR',
+}
+
+// 2️⃣ Define DB enum (for drizzle migrations & schema)
+export const roleEnum = pgEnum('role', [
+  UserRole.ADMIN,
+  UserRole.USER,
+  UserRole.MODERATOR,
+]);
+
 // ---------------- USERS ----------------
 export const users = pgTable(
   'users',
@@ -16,7 +29,7 @@ export const users = pgTable(
     name: text('name').notNull(),
     email: text('email').notNull(),
     passwordHash: text('password_hash').notNull(),
-    role: text('role').notNull(),
+    role: roleEnum('role').notNull().default(UserRole.USER),
   },
   (t) => ({
     emailIndex: index('users_email_idx').on(t.email),
