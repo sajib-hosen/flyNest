@@ -35,6 +35,8 @@ export class AdminGuard implements CanActivate {
       return false;
     }
 
+    console.log('requiredRole', requiredRole);
+
     if (requiredRole) {
       // const hasSufficientAdminRole =
       //   await this.authService.hasSufficientAdminRole(

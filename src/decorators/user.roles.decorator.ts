@@ -1,7 +1,12 @@
 import { SetMetadata } from '@nestjs/common';
-import { AdminRoleType } from 'src/modules/auth/dto/admin.role.type';
+
+export enum UserRole {
+  ADMIN = 'ADMIN',
+  USER = 'USER',
+  MODERATOR = 'MODERATOR',
+}
 
 export const ROLES_KEY = 'roles';
 
-export const Roles = (roleType: string, ...roles: AdminRoleType[]) =>
+export const Roles = (...roles: [UserRole, ...UserRole[]]) =>
   SetMetadata(ROLES_KEY, roles);

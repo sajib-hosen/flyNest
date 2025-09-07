@@ -20,11 +20,12 @@ import { ClassesService } from './classes.service';
 import { CreateClassInputDto } from './dto/create-class.dto';
 import { ClassResponseDto } from './dto/class.response.dto';
 import { StudentsResponseDto } from '../students/dto/students.response.dto';
-import { Roles } from 'src/decorators/user.roles.decorator';
+import { Roles, UserRole } from 'src/decorators/user.roles.decorator';
 import { AdminGuard } from 'src/guards/http/admin.guard';
 import { AuthGuard } from 'src/guards/http/auth.guard';
 import { EnrollStudentInputDto } from './dto/enroll-students.input.dto';
 import { Public } from 'src/decorators/is.public';
+// import { UserRole } from 'src/drizzle/schema/schema';
 
 @ApiTags('Classes')
 @Controller('classes')
@@ -32,7 +33,7 @@ export class ClassesController {
   constructor(private readonly classesService: ClassesService) {}
 
   @Post()
-  @Roles('admin', 'admin')
+  @Roles(UserRole.ADMIN, UserRole.MODERATOR)
   @UseGuards(AuthGuard, AdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new class' })
@@ -48,7 +49,7 @@ export class ClassesController {
   }
 
   @Post('/:id/enroll')
-  @Roles('admin', 'teacher')
+  @Roles(UserRole.ADMIN, UserRole.MODERATOR)
   @UseGuards(AuthGuard, AdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Enroll a student to a class' })
@@ -83,7 +84,7 @@ export class ClassesController {
   }
 
   @Post('/:id/attendance')
-  @Roles('admin', 'teacher')
+  @Roles(UserRole.ADMIN, UserRole.MODERATOR)
   @UseGuards(AuthGuard, AdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Attend student by ID' })
@@ -93,7 +94,8 @@ export class ClassesController {
   }
 
   @Get('attendance')
-  @Roles('admin', 'teacher')
+  // @Roles('admin', 'teacher')
+  @Roles(UserRole.ADMIN, UserRole.MODERATOR)
   @UseGuards(AuthGuard, AdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get attendance sheed by date' })

@@ -8,12 +8,7 @@ import {
   pgEnum as drizzlePgEnum,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-
-export enum UserRole {
-  ADMIN = 'ADMIN',
-  USER = 'USER',
-  MODERATOR = 'MODERATOR',
-}
+import { UserRole } from 'src/decorators/user.roles.decorator';
 
 // 👇 Wrapper to fix ESLint "any" issue
 const pgEnum = <T extends readonly [string, ...string[]]>(
